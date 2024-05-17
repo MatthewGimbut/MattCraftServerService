@@ -87,12 +87,10 @@ namespace ServerManager
                 Console.WriteLine("Unmined didn't complete successfully. Continuing.");
             }
 
-            /*if (serverManager.StartServer())
+            if (serverManager.StartServer())
             {
                 Console.WriteLine("Server started.");
             }
-            */
-
         }
 
         private bool StartServer()
