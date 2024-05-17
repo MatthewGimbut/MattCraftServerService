@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO.Compression;
 using Azure.Identity;
 using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 
 namespace ServerManager
 {
@@ -13,6 +15,9 @@ namespace ServerManager
         private string? UnminedLocation { get; set; }
         private string? UnminedOutput {  get; set; }
         private string? StorageAccountUri {  get; set; }
+        private string? StorageAccountConnectionString { get; set; }
+        private string? StorageAccountKey { get; set; }
+
         static Process? MattCraft {  get; set; }
 
         public ServerManager() 
@@ -22,6 +27,8 @@ namespace ServerManager
             UnminedLocation = Environment.GetEnvironmentVariable("UnminedLocation");
             UnminedOutput = Environment.GetEnvironmentVariable("UnminedOutput");
             StorageAccountUri = Environment.GetEnvironmentVariable("StorageAccountUri");
+            StorageAccountConnectionString = Environment.GetEnvironmentVariable("StorageAccountConnectionString");
+            StorageAccountKey = Environment.GetEnvironmentVariable("StorageAccountKey");
         }
 
         static void Main(string[] args)
@@ -52,9 +59,11 @@ namespace ServerManager
                 return;
             }          
 
-            if (serverManager.StorageAccountUri == null)
+            if (serverManager.StorageAccountUri == null
+                || serverManager.StorageAccountConnectionString == null
+                || serverManager.StorageAccountKey == null)
             {
-                Console.WriteLine("Storage account URI not found. Exiting.");
+                Console.WriteLine("Storage account information not found. Exiting.");
                 return;
             }
 
@@ -68,7 +77,7 @@ namespace ServerManager
                 Console.WriteLine("Successfully ran Unmined.");
                 Console.WriteLine("Attmepting to upload to Azure Storage Account.");
 
-                if (serverManager.UploadToStorage())
+                if (serverManager.UploadToStorage().Result)
                 {
                     Console.WriteLine("Successfully uploaded map information to Azure Storage.");
                 }
@@ -81,7 +90,8 @@ namespace ServerManager
             /*if (serverManager.StartServer())
             {
                 Console.WriteLine("Server started.");
-            }*/
+            }
+            */
 
         }
 
@@ -118,12 +128,39 @@ namespace ServerManager
             return true;
         }
 
-        private bool UploadToStorage()
+        private async Task<bool> UploadToStorage()
         {
-            BlobServiceClient blobServiceClient = new BlobServiceClient(
-                new Uri(this.StorageAccountUri),
-                new DefaultAzureCredential());
+            BlobServiceClient blobServiceClient = new BlobServiceClient(this.StorageAccountConnectionString);
 
+            var result = await blobServiceClient.GetPropertiesAsync();
+
+            string containerName = "map";
+            string blobName = "zipped-map";
+
+            BlobContainerClient container = blobServiceClient.GetBlobContainerClient(containerName);
+
+            Azure.Response<bool> deleteResponse = container.DeleteBlobIfExists(blobName);
+
+            if (deleteResponse != null && deleteResponse.Value == true)
+            {
+                Console.WriteLine("Deleted previous map.");
+            }
+
+            string zipFile = $"{this.WorldLocation}\\map.zip";
+
+            if (File.Exists(zipFile)) 
+            {
+                File.Delete(zipFile);
+            }
+
+            ZipFile.CreateFromDirectory(this.UnminedOutput, zipFile);
+
+            var uploadResponse = container.UploadBlob(blobName, File.OpenRead(zipFile));
+
+            if (uploadResponse.Value != null)
+            {
+                return true;
+            }
 
             return false;
         }
