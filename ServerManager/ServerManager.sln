@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MattCraftServerManager", "MattCraftServerManager\MattCraftServerManager.csproj", "{4284E6D3-BC26-407A-822B-C3D7828F55CD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerManager", "ServerManager\ServerManager.csproj", "{ADE89342-AAB2-4B6C-BFA6-5A7C00BBEBA1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4284E6D3-BC26-407A-822B-C3D7828F55CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4284E6D3-BC26-407A-822B-C3D7828F55CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4284E6D3-BC26-407A-822B-C3D7828F55CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4284E6D3-BC26-407A-822B-C3D7828F55CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADE89342-AAB2-4B6C-BFA6-5A7C00BBEBA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADE89342-AAB2-4B6C-BFA6-5A7C00BBEBA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADE89342-AAB2-4B6C-BFA6-5A7C00BBEBA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADE89342-AAB2-4B6C-BFA6-5A7C00BBEBA1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {888F711C-A32A-414D-8B74-6D35CEF8E16C}
+		SolutionGuid = {9E7EA6AA-2186-44C7-82DF-81D35B5AFDDB}
 	EndGlobalSection
 EndGlobal
