@@ -77,7 +77,7 @@ namespace ServerManager
                 Console.WriteLine("Successfully ran Unmined.");
                 Console.WriteLine("Attmepting to upload to Azure Storage Account.");
 
-                if (serverManager.UploadToStorage().Result)
+                if (serverManager.UploadToStorage())
                 {
                     Console.WriteLine("Successfully uploaded map information to Azure Storage.");
                 }
@@ -126,14 +126,12 @@ namespace ServerManager
             return true;
         }
 
-        private async Task<bool> UploadToStorage()
+        private bool UploadToStorage()
         {
             BlobServiceClient blobServiceClient = new BlobServiceClient(this.StorageAccountConnectionString);
 
-            var result = await blobServiceClient.GetPropertiesAsync();
-
             string containerName = "map";
-            string blobName = "zipped-map";
+            string blobName = "map.jpg";
 
             BlobContainerClient container = blobServiceClient.GetBlobContainerClient(containerName);
 
@@ -144,16 +142,7 @@ namespace ServerManager
                 Console.WriteLine("Deleted previous map.");
             }
 
-            string zipFile = $"{this.WorldLocation}\\map.zip";
-
-            if (File.Exists(zipFile)) 
-            {
-                File.Delete(zipFile);
-            }
-
-            ZipFile.CreateFromDirectory(this.UnminedOutput, zipFile);
-
-            var uploadResponse = container.UploadBlob(blobName, File.OpenRead(zipFile));
+            var uploadResponse = container.UploadBlob(blobName, File.OpenRead($"{this.UnminedOutput}\\map.jpg"));
 
             if (uploadResponse.Value != null)
             {
@@ -182,7 +171,7 @@ namespace ServerManager
             {
                 using (Process unmined = new Process())
                 {
-                    string command = $"{this.UnminedLocation} web render --players --shadows=true --world=\"{this.WorldLocation}\" --output={this.UnminedOutput}";
+                    string command = $"{this.UnminedLocation} image render --trim --shadows=true --world=\"{this.WorldLocation}\" --output={this.UnminedOutput}\\map.jpg";
 
                     ProcessStartInfo info = new ProcessStartInfo("cmd.exe", "/c " + command)
                     {
