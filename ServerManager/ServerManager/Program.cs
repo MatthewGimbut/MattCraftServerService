@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Text;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using HtmlAgilityPack;
 
 namespace ServerManager
 {
@@ -17,6 +19,7 @@ namespace ServerManager
         private string? StorageAccountUri {  get; set; }
         private string? StorageAccountConnectionString { get; set; }
         private string? StorageAccountKey { get; set; }
+        private string? ModListLocation { get; set; }
 
         static Process? MattCraft {  get; set; }
 
@@ -29,6 +32,7 @@ namespace ServerManager
             StorageAccountUri = Environment.GetEnvironmentVariable("StorageAccountUri");
             StorageAccountConnectionString = Environment.GetEnvironmentVariable("StorageAccountConnectionString");
             StorageAccountKey = Environment.GetEnvironmentVariable("StorageAccountKey");
+            ModListLocation = Environment.GetEnvironmentVariable("ModListLocation");
         }
 
         static void Main(string[] args)
@@ -72,12 +76,14 @@ namespace ServerManager
             Console.WriteLine($"Found uNmINeD exe at {serverManager.UnminedLocation}.");
             Console.WriteLine($"Found uNmINeD output directory is {serverManager.UnminedOutput}.");
 
+            BlobServiceClient blobServiceClient = new BlobServiceClient(serverManager.StorageAccountConnectionString);
+
             if (serverManager.RunUnmined())
             {
                 Console.WriteLine("Successfully ran Unmined.");
                 Console.WriteLine("Attmepting to upload to Azure Storage Account.");
 
-                if (serverManager.UploadToStorage())
+                if (serverManager.UploadMapToStorage(blobServiceClient))
                 {
                     Console.WriteLine("Successfully uploaded map information to Azure Storage.");
                 }
@@ -85,6 +91,19 @@ namespace ServerManager
             else
             {
                 Console.WriteLine("Unmined didn't complete successfully. Continuing.");
+            }
+
+            if (serverManager.ModListLocation != null)
+            {
+                Console.WriteLine("Mod list found, attempting to upload to storage.");
+                if(serverManager.UploadModListToStorage(blobServiceClient))
+                {
+                    Console.WriteLine("Uploaded mod list to storage.");
+                }
+                else
+                {
+                    Console.WriteLine("Unable to upload the most recent version of the mod list to storage.");
+                }
             }
 
             if (serverManager.StartServer())
@@ -126,16 +145,56 @@ namespace ServerManager
             return true;
         }
 
-        private bool UploadToStorage()
+        private bool UploadModListToStorage(BlobServiceClient blobServiceClient)
         {
-            BlobServiceClient blobServiceClient = new BlobServiceClient(this.StorageAccountConnectionString);
+            string blobName = "modlist.json";
 
-            string containerName = "map";
+            BlobContainerClient container = blobServiceClient.GetBlobContainerClient("modlist");
+            Azure.Response<bool> deleteResponse = container.DeleteBlobIfExists("modlist.json");
+
+            if (deleteResponse != null && deleteResponse.Value == true)
+            {
+                Console.WriteLine("Deleted previous mod list.");
+            }
+
+            Dictionary<string, string> modList = GetModList();
+            string json = Newtonsoft.Json.JsonConvert.SerializeObject(modList);
+
+            var uploadResponse = container.UploadBlob(blobName, new MemoryStream(Encoding.UTF8.GetBytes(json)));
+
+            if (uploadResponse.Value != null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private Dictionary<string, string> GetModList()
+        {
+            using StreamReader reader = new(this.ModListLocation);
+            string content = reader.ReadToEnd();
+
+            HtmlDocument htmlDocument = new HtmlDocument();
+            htmlDocument.LoadHtml(content);
+            List<HtmlNode> nodes = htmlDocument.DocumentNode.SelectNodes("//li/a").ToList();
+
+            Dictionary<string, string> nameUrlPairs = new Dictionary<string, string>();
+            foreach (HtmlNode node in nodes)
+            {
+                nameUrlPairs.Add(node.InnerHtml, node.Attributes["href"].Value);
+            }
+
+            return nameUrlPairs;
+        }
+
+        private bool UploadMapToStorage(BlobServiceClient blobServiceClient)
+        {
             string blobName = "map.jpg";
 
-            BlobContainerClient container = blobServiceClient.GetBlobContainerClient(containerName);
+            BlobContainerClient container = blobServiceClient.GetBlobContainerClient("map");
 
-            Azure.Response<bool> deleteResponse = container.DeleteBlobIfExists(blobName);
+            Azure.Response<bool> deleteResponse = container.DeleteBlobIfExists("map.jpg");
 
             if (deleteResponse != null && deleteResponse.Value == true)
             {
